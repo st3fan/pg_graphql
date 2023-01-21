@@ -30,4 +30,5 @@ jobs:
       run: cargo install --locked cargo-pgx
     - name: Initialize PGX
       run: cargo pgx init --pg${{matrix.pg-version}} /usr/lib/postgresql/${{matrix.pg-version}}/bin/pg_config
-
+    - name: Test
+      run: env PATH=/usr/lib/postgresql/${{matrix.pg-version}}/bin:$PATH ./bin/installcheck

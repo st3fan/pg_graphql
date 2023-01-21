@@ -1,4 +1,7 @@
 name: tests
+
+permissions: read-all
+
 on:
   pull_request:
   push: { branches: master }
@@ -7,13 +10,27 @@ jobs:
   test:
     name: Run tests
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 8
+      matrix:
+        pg-version: ['11', '12', '13', '14', '15']
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-
-    - name: Build docker images
-      run: docker-compose -f .ci/docker-compose.yml build
-
-    - name: Run tests
-      run: docker-compose -f .ci/docker-compose.yml run test
+      with:
+        persist-credentials: false
+    - name: Install Postgres
+      run: |
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main 14" > /etc/apt/sources.list.d/pgdg.list'
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+        sudo apt-get update
+        sudo apt-get install -y postgresql-${{matrix.pg-version}}
+    - name: Install PGX
+      run: cargo install --locked cargo-pgx
+    - name: Initialize PGX
+      run: cargo pgx init --pg${{matrix.pg-version}} /usr/lib/postgresql/${{matrix.pg-version}}/bin/pg_config
+    - name: Install Extension
+      run: cargo pgx install --pg-config /usr/lib/postgresql/${{matrix.pg-version}}/bin/pg_config
+    - name: Run Tests
+      run: env PATH=/usr/lib/postgresql/${{matrix.pg-version}}/bin:$PATH ./bin/installcheck

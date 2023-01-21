@@ -11,7 +11,7 @@ jobs:
     name: Run tests
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 4
+      max-parallel: 8
       matrix:
         pg-version: ['11', '12', '13', '14', '15']
 
@@ -31,6 +31,6 @@ jobs:
     - name: Initialize PGX
       run: cargo pgx init --pg${{matrix.pg-version}} /usr/lib/postgresql/${{matrix.pg-version}}/bin/pg_config
     - name: Install Extension
-      run: cargo pgx install
+      run: cargo pgx install --pg-config /usr/lib/postgresql/${{matrix.pg-version}}/bin/pg_config
     - name: Run Tests
       run: env PATH=/usr/lib/postgresql/${{matrix.pg-version}}/bin:$PATH ./bin/installcheck

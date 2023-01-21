@@ -1,4 +1,7 @@
 name: tests
+
+permissions: read-all
+
 on:
   pull_request:
   push: { branches: master }
@@ -7,13 +10,19 @@ jobs:
   test:
     name: Run tests
     runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      pg-version: ['11', '12', '13', '14', '15']
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+    - name: Install Postgres
+      run: sudo apt-get install -y postgresql-${{matrix.pg-version}}
+    - name: Install PGX
+      run: cargo install --locked cargo-pgx
+    - name: Initialize PGX
+      run: cargo pgx init --pg${{matrix.pg-version}} /usr/lib/postgresql/${{matrix.pg-version}}/bin/pg_config
 
-    - name: Build docker images
-      run: docker-compose -f .ci/docker-compose.yml build
-
-    - name: Run tests
-      run: docker-compose -f .ci/docker-compose.yml run test
